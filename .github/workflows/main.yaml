@@ -1,0 +1,30 @@
+name: Build and Release KDT
+
+# Controls when the action will run. 
+on:
+  push:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.19'
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Fuzz Create User
+        run: go test -v -fuzz=FuzzCreateUser --fuzztime=20s ./handlers
+
+      - name: Fuzz GetUserByID
+        run: go test -v -fuzz=FuzzGetUserByID --fuzztime=20s ./handlers

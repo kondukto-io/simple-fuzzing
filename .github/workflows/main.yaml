@@ -1,4 +1,4 @@
-name: Build and Release KDT
+name: Build and Release pipeline
 
 # Controls when the action will run. 
 on:

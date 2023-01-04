@@ -15,10 +15,7 @@ const (
 )
 
 func Execute() error {
-	//dbPath := filepath.Join(os.TempDir(), "db.db")
-	//defer os.RemoveAll(dbPath)
-
-	//db, err := sql.Open("sqlite3", dbPath)
+	// use sqlite in memory for the sake of simplicity
 	db, err := sql.Open("sqlite3", "file::memory:?cache=shared")
 	if err != nil {
 		panic(err)
@@ -32,6 +29,7 @@ func Execute() error {
 	// middlewares
 	e.Use(middleware.Logger())
 
+	// in the product the migration should run once
 	err = handlers.MigrateDB(db)
 	if err != nil {
 		panic(err)

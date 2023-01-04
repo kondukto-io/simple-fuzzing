@@ -17,12 +17,13 @@ type User struct {
 func (h *Handler) CreateUser(c echo.Context) error {
 	u := new(User)
 	if err := c.Bind(u); err != nil {
-		//return &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid request"}
+		// in the production you should not dump the error message directly
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 
 	stmt, err := h.db.Prepare("INSERT INTO users(id, name, email) values (?, ?, ?)")
 	if err != nil {
+		// in the production you should not dump the error message directly
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 
@@ -30,6 +31,7 @@ func (h *Handler) CreateUser(c echo.Context) error {
 
 	_, err = stmt.Exec(u.ID, u.Name, u.Email)
 	if err != nil {
+		// in the production you should not dump the error message directly
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 
@@ -45,6 +47,7 @@ func (h *Handler) GetUserByID(c echo.Context) error {
 
 	stmt, err := h.db.Prepare("SELECT * FROM users WHERE id=?")
 	if err != nil {
+		// in the production you should not dump the error message directly
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 
@@ -54,6 +57,7 @@ func (h *Handler) GetUserByID(c echo.Context) error {
 
 	err = stmt.QueryRow(cid).Scan(&id, &name, &email)
 	if err != nil {
+		// in the production you should not dump the error message directly
 		return &echo.HTTPError{Code: http.StatusNotFound, Message: err.Error()}
 	}
 

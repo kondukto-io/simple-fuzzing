@@ -12,6 +12,7 @@ type User struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
+	Blog  string `json:"blog"`
 }
 
 func (h *Handler) CreateUser(c echo.Context) error {
@@ -21,7 +22,7 @@ func (h *Handler) CreateUser(c echo.Context) error {
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 
-	stmt, err := h.db.Prepare("INSERT INTO users(id, name, email) values (?, ?, ?)")
+	stmt, err := h.db.Prepare("INSERT INTO users(id, name, email) values (?, ?, ?, ?)")
 	if err != nil {
 		// in the production you should not dump the error message directly
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
@@ -29,7 +30,7 @@ func (h *Handler) CreateUser(c echo.Context) error {
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(u.ID, u.Name, u.Email)
+	_, err = stmt.Exec(u.ID, u.Name, u.Email, u.Blog)
 	if err != nil {
 		// in the production you should not dump the error message directly
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
@@ -53,13 +54,13 @@ func (h *Handler) GetUserByID(c echo.Context) error {
 
 	defer stmt.Close()
 
-	var id, name, email string
+	var id, name, email, blog string
 
-	err = stmt.QueryRow(cid).Scan(&id, &name, &email)
+	err = stmt.QueryRow(cid).Scan(&id, &name, &email, &blog)
 	if err != nil {
 		// in the production you should not dump the error message directly
 		return &echo.HTTPError{Code: http.StatusNotFound, Message: err.Error()}
 	}
 
-	return c.JSON(http.StatusOK, User{ID: id, Name: name, Email: email})
+	return c.JSON(http.StatusOK, User{ID: id, Name: name, Email: email, Blog: blog})
 }

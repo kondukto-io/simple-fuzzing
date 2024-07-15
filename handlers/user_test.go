@@ -28,6 +28,17 @@ var (
 				ID:    "1111",
 				Name:  "kondukto",
 				Email: "helo@kondukto.io",
+				Blog:  "http://www.myblog.com",
+			},
+			wantErr: false,
+		},
+		{
+			name: "success",
+			args: User{
+				ID:    "1112",
+				Name:  "kondukto",
+				Email: "helo@kondukto.io",
+				Blog:  "https://myblog.com",
 			},
 			wantErr: false,
 		},
@@ -37,6 +48,7 @@ var (
 				ID:    "1212121212121212121212121111",
 				Name:  "kondukto",
 				Email: "helo@kondukto.io",
+				Blog:  "www.myblog.com",
 			},
 			wantErr: true,
 		},
@@ -46,6 +58,7 @@ var (
 				ID:    "s1111", // not a valid ID
 				Name:  "kondukto",
 				Email: "helo@kondukto.io",
+				Blog:  "www.myblog.com",
 			},
 			wantErr: true,
 		},
@@ -66,7 +79,7 @@ func TestCreateUser(t *testing.T) {
 			}
 			defer db.Close()
 
-			mock.ExpectPrepare(regexp.QuoteMeta("INTO users(id, name, email) values (?, ?, ?)"))
+			mock.ExpectPrepare(regexp.QuoteMeta("INTO users(id, name, email) values (?, ?, ?, ?)"))
 
 			h := NewHandler(db)
 
@@ -82,8 +95,8 @@ func TestCreateUser(t *testing.T) {
 			c := e.NewContext(req, rec)
 			c.SetPath("/create")
 
-			mock.ExpectExec(regexp.QuoteMeta("INSERT INTO users(id, name, email) values (?, ?, ?)")).
-				WithArgs(tt.args.ID, tt.args.Name, tt.args.Email).WillReturnResult(sqlmock.NewResult(1, 1))
+			mock.ExpectExec(regexp.QuoteMeta("INSERT INTO users(id, name, email) values (?, ?, ?, ?)")).
+				WithArgs(tt.args.ID, tt.args.Name, tt.args.Email, tt.args.Blog).WillReturnResult(sqlmock.NewResult(1, 1))
 
 			// testing the function
 			if err := h.CreateUser(c); err != nil {
@@ -125,8 +138,8 @@ func TestGetUserByID(t *testing.T) {
 			c.SetParamNames("id")
 			c.SetParamValues(tt.args.ID)
 
-			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
-				AddRow(tt.args.ID, tt.args.Name, tt.args.Email)
+			rows := sqlmock.NewRows([]string{"id", "name", "email", "blog"}).
+				AddRow(tt.args.ID, tt.args.Name, tt.args.Email, tt.args.Blog)
 
 			mock.ExpectQuery("SELECT (.+) FROM users WHERE id=?").
 				WithArgs(tt.args.ID).
@@ -182,8 +195,8 @@ func FuzzGetUserByID(f *testing.F) {
 		c.SetParamNames("id")
 		c.SetParamValues(orig)
 
-		rows := sqlmock.NewRows([]string{"id", "name", "email"}).
-			AddRow(orig, "kondukto", "test@kondukto.io")
+		rows := sqlmock.NewRows([]string{"id", "name", "email", "blog"}).
+			AddRow(orig, "kondukto", "test@kondukto.io", "myblog.com")
 
 		mock.ExpectQuery("SELECT (.+) FROM users WHERE id=?").
 			WithArgs(orig).
@@ -200,6 +213,7 @@ func FuzzGetUserByID(f *testing.F) {
 			ID:    orig,
 			Name:  "kondukto",
 			Email: "test@kondukto.io",
+			Blog:  "myblog.com",
 		}
 		if user.ID != orig {
 			t.Fatalf("test failed expected %v -- got %v", expected, user)
@@ -216,21 +230,23 @@ func FuzzCreateUser(f *testing.F) {
 	defer db.Close()
 
 	for _, tt := range tests {
-		f.Add(tt.args.ID, tt.args.Name, tt.args.Email)
+		f.Add(tt.args.ID, tt.args.Name, tt.args.Email, tt.args.Blog)
 	}
 
-	f.Fuzz(func(t *testing.T, id, name, email string) {
-		if !util.VaildID(id) || !utf8.ValidString(name) || !utf8.ValidString(email) {
+	f.Fuzz(func(t *testing.T, id, name, email, blog string) {
+		if !util.VaildID(id) || !utf8.ValidString(name) || !utf8.ValidString(email) || !util.ValidURL(blog) {
 			return
 		}
 
-		mock.ExpectPrepare(regexp.QuoteMeta("INTO users(id, name, email) values (?, ?, ?)"))
+		mock.ExpectPrepare(regexp.QuoteMeta("INTO users(id, name, email) values (?, ?, ?, ?)"))
 
 		h := NewHandler(db)
 		input := User{
 			ID:    id,
 			Name:  name,
 			Email: email,
+			Blog:  blog,
+			//Blog: "https://myblog.com",
 		}
 
 		t.Log(input)
@@ -247,8 +263,8 @@ func FuzzCreateUser(f *testing.F) {
 		c := e.NewContext(req, rec)
 		c.SetPath("/create")
 
-		mock.ExpectExec(regexp.QuoteMeta("INSERT INTO users(id, name, email) values (?, ?, ?)")).
-			WithArgs(input.ID, input.Name, input.Email).WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec(regexp.QuoteMeta("INSERT INTO users(id, name, email) values (?, ?, ?, ?)")).
+			WithArgs(input.ID, input.Name, input.Email, input.Blog).WillReturnResult(sqlmock.NewResult(1, 1))
 
 		// testing the function
 		if err := h.CreateUser(c); err != nil {
